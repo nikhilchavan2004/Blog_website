@@ -28,7 +28,7 @@ export default function Header() {
           type="text"
           placeholder="Search..."
         
-          className="hidden lg:inline pl-24"
+          className="hidden lg:inline pl-24 rounded-lg"
         />
         <CiSearch  className='hidden lg:inline relative  -left-5' />
 
