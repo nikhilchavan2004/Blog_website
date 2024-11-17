@@ -1,7 +1,54 @@
-import { Button, Label, TextInput } from "flowbite-react";
-import { Link } from "react-router-dom";
+import { Button, Label, TextInput, Alert, Spinner } from "flowbite-react";
+import { useState } from "react";
+import { Link, useNavigate } from "react-router-dom";
 
 export default function Signup() {
+  const [formd, setform] = useState({});
+  const [error, setError] = useState(null);
+  const [loading, setloading] = useState(false);
+  const navigate = useNavigate();
+
+  const handleChange = (e) => {
+    setform({ ...formd, [e.target.id]: e.target.value.trim() });
+  };
+  console.log(formd);
+
+  const handleSubmit = async (e) => {
+    e.preventDefault();
+    if(!formd.username||!formd.email||!formd.password){
+      setError("Please fill all the fields");
+    }
+    console.log(formd);
+    try {
+      setloading(true)
+
+      const response = await fetch("/api/auth/signup", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify(formd),
+      });
+      const data = await response.json();
+      console.log(data);
+      if(data.success===false){
+        setError(data.message);
+      
+
+      }
+      setloading(false)
+      if(response.ok){
+  
+        navigate("/signin")
+      }
+
+     
+    } catch (err) {
+      console.log(err);
+      setloading(false)
+    }
+  };
+
   return (
     <div className="min-h-screen bg-gray-50 dark:bg-gray-900 py-20">
       <div className="max-w-3xl mx-auto px-4 sm:px-6 lg:px-8">
@@ -19,18 +66,19 @@ export default function Signup() {
               </div>
             </Link>
             <p className="mt-6 text-lg text-gray-600 dark:text-gray-300">
-              Join our community of curious minds and passionate readers! Sign up now and become part of the conversation.
+              Join our community of curious minds and passionate readers! Sign
+              up now and become part of the conversation.
             </p>
           </div>
 
           {/* Right Column - Sign Up Form */}
           <div className="flex-1">
             <div className="bg-white dark:bg-gray-800 rounded-xl shadow-lg p-6">
-              <form className="space-y-6">
+              <form className="space-y-6" onSubmit={handleSubmit}>
                 <div>
-                  <Label 
-                    htmlFor="username" 
-                    value="Username" 
+                  <Label
+                    htmlFor="username"
+                    value="Username"
                     className="block text-sm font-medium text-gray-700 dark:text-gray-300"
                   />
                   <TextInput
@@ -39,13 +87,14 @@ export default function Signup() {
                     placeholder="Enter your username"
                     className="mt-1"
                     required
+                    onChange={handleChange}
                   />
                 </div>
 
                 <div>
-                  <Label 
-                    htmlFor="email" 
-                    value="Email" 
+                  <Label
+                    htmlFor="email"
+                    value="Email"
                     className="block text-sm font-medium text-gray-700 dark:text-gray-300"
                   />
                   <TextInput
@@ -54,13 +103,14 @@ export default function Signup() {
                     placeholder="Enter your email"
                     className="mt-1"
                     required
+                    onChange={handleChange}
                   />
                 </div>
 
                 <div>
-                  <Label 
-                    htmlFor="password" 
-                    value="Password" 
+                  <Label
+                    htmlFor="password"
+                    value="Password"
                     className="block text-sm font-medium text-gray-700 dark:text-gray-300"
                   />
                   <TextInput
@@ -69,26 +119,48 @@ export default function Signup() {
                     placeholder="Create a password"
                     className="mt-1"
                     required
+                    onChange={handleChange}
                   />
                 </div>
 
                 <Button
                   type="submit"
                   className="w-full bg-gradient-to-tr from-indigo-500 via-purple-500 to-pink-500 text-white font-medium rounded-xl py-2 px-20 hover:opacity-90 transition-opacity"
+                  disabled={loading}
                 >
-                  Sign up
+                 {
+                  loading ?(
+                    <>
+                     <Spinner size="sm" />
+                     <span className="pl-3">Loading...</span>
+                    
+                    
+                    </>
+                   
+                 
+                   ) : 'Sign Up'
+                  
+                 }
                 </Button>
               </form>
 
               <div className="mt-6 text-center text-sm text-gray-600 dark:text-gray-400">
                 Already have an account?{" "}
-                <Link 
-                  to="/signin" 
+                <Link
+                  to="/signin"
                   className="font-medium text-indigo-500 hover:text-indigo-400 transition-colors"
                 >
                   Sign in
                 </Link>
               </div>
+              {
+                error && (
+                  <Alert className="mt-5 "
+                  color="failure">
+{error}
+                  </Alert>
+                )
+              }
             </div>
           </div>
         </div>
