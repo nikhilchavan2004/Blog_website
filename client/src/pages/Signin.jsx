@@ -1,27 +1,29 @@
 import { Button, Label, TextInput, Alert, Spinner } from "flowbite-react";
 import { useState } from "react";
 import { Link, useNavigate } from "react-router-dom";
+import { useDispatch, useSelector } from "react-redux";
+import { signinStart, signinSuccess, signinFailure } from "../redux/user/userSlice";
 
 export default function Signin() {
-  const [formd, setform] = useState({});
-  const [error, setError] = useState(null);
-  const [loading, setloading] = useState(false);
+  const [formd, setForm] = useState({ email: "", password: "" });
+  const { loading, error } = useSelector((state) => state.user);
   const navigate = useNavigate();
+  const dispatch = useDispatch();
 
   const handleChange = (e) => {
-    setform({ ...formd, [e.target.id]: e.target.value.trim() });
+    setForm({ ...formd, [e.target.id]: e.target.value.trim() });
   };
-  console.log(formd);
 
   const handleSubmit = async (e) => {
     e.preventDefault();
-    if ( !formd.email || !formd.password) {
-      setError("Please fill all the fields");
-    }
-    console.log(formd);
-    try {
-      setloading(true);
 
+    // Validate input
+    if (!formd.email || !formd.password) {
+      return dispatch(signinFailure("All fields are required"));
+    }
+
+    try {
+      dispatch(signinStart());
       const response = await fetch("/api/auth/signin", {
         method: "POST",
         headers: {
@@ -30,17 +32,16 @@ export default function Signin() {
         body: JSON.stringify(formd),
       });
       const data = await response.json();
-      console.log(data);
-      if (data.success === false) {
-        setError(data.message);
+
+      if (!response.ok) {
+        return dispatch(signinFailure(data.message || "Signin failed"));
       }
-      setloading(false);
-      if (response.ok) {
-        navigate("/home");
-      }
+
+      // Dispatch success and navigate
+      dispatch(signinSuccess(data));
+      navigate("/home");
     } catch (err) {
-      console.log(err);
-      setloading(false);
+      dispatch(signinFailure(err.message || "Something went wrong"));
     }
   };
 
@@ -61,17 +62,14 @@ export default function Signin() {
               </div>
             </Link>
             <p className="mt-6 text-lg text-gray-600 dark:text-gray-300">
-              Join our community of curious minds and passionate readers! Sign
-              up now and become part of the conversation.
+              Join our community of curious minds and passionate readers! Sign up now and become part of the conversation.
             </p>
           </div>
 
-          {/* Right Column - Sign Up Form */}
+          {/* Right Column - Sign In Form */}
           <div className="flex-1">
             <div className="bg-white dark:bg-gray-800 rounded-xl shadow-lg p-6">
               <form className="space-y-6" onSubmit={handleSubmit}>
-                
-
                 <div>
                   <Label
                     htmlFor="email"
@@ -121,7 +119,7 @@ export default function Signin() {
               </form>
 
               <div className="mt-6 text-center text-sm text-gray-600 dark:text-gray-400">
-                Dont have an account?{" "}
+                Don’t have an account?{" "}
                 <Link
                   to="/signup"
                   className="font-medium text-indigo-500 hover:text-indigo-400 transition-colors"
@@ -129,8 +127,9 @@ export default function Signin() {
                   Sign-up
                 </Link>
               </div>
+
               {error && (
-                <Alert className="mt-5 " color="failure">
+                <Alert className="mt-5" color="failure">
                   {error}
                 </Alert>
               )}
