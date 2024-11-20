@@ -12,22 +12,33 @@ export const signup = async (req, res) => {
     email === "" ||
     password === ""
   ) {
-    console.log("all fields are  required");
+    return res.status(400).json({
+      success: false,
+      message: "All fields are required",
+    });
   }
   const hashPassword = bcryptjs.hashSync(password, 10);
 
-  const usr = new User({
-    username,
-    email,
-    password: hashPassword,
-  });
-  await usr.save();
-  res.status(201).json({
-    message: "User created successfully",
-    user: usr,
-  });
+  try {
+    const usr = new User({
+      username,
+      email,
+      password: hashPassword,
+    });
+    await usr.save();
+    res.status(201).json({
+      success: true,
+      message: "User created successfully",
+      user: usr,
+    });
+  } catch (error) {
+    res.status(500).json({
+      success: false,
+      message: "Error creating user",
+      error: error.message,
+    });
+  }
 };
-
 
 export const signin = async (req, res) => {
   const { email, password } = req.body;
@@ -70,6 +81,50 @@ export const signin = async (req, res) => {
     });
   } catch (err) {
     // Catch and log any unexpected errors
+    console.error("Internal server error:", err);
+    return res.status(500).json({ message: "Internal server error" });
+  }
+};
+export const google = async (req, res, next) => {
+  const { email, name, googlePhotoUrl } = req.body;
+  try {
+    const user = await User.findOne({ email });
+    if (user) {
+      const token = jwt.sign(
+        { id: user._id },
+        process.env.SECRET_KEY
+      );
+      
+      const { password, ...rest } = user._doc;
+      return res.status(200)
+        .cookie("access_token", token, {
+          httpOnly: true,
+        })
+        .json(rest);
+    } else {
+      const generatedPassword = Math.random().toString(36).slice(-8);
+      const hashedPassword = bcryptjs.hashSync(generatedPassword, 10);
+      const newUser = new User({
+        email,
+        username: name.toLowerCase().split(" ").join("") + Math.random().toString(9).slice(-4),
+        password: hashedPassword,
+        profilePicture: googlePhotoUrl
+      });
+      
+      const savedUser = await newUser.save();
+      const token = jwt.sign(
+        { id: savedUser._id },
+        process.env.SECRET_KEY
+      );
+      
+      const { password, ...rest } = savedUser._doc;
+      return res.status(200)
+        .cookie("access_token", token, {
+          httpOnly: true,
+        })
+        .json(rest);
+    }
+  } catch (err) {
     console.error("Internal server error:", err);
     return res.status(500).json({ message: "Internal server error" });
   }

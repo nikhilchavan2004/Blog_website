@@ -18,14 +18,20 @@ if (!MONGO_URI) {
 }
 
 mongoose
-  .connect(MONGO_URI)
+  .connect(MONGO_URI, {
+    useNewUrlParser: true,
+    useUnifiedTopology: true,
+    serverSelectionTimeoutMS: 15000, // 15-second timeout
+    socketTimeoutMS: 45000, // 45-second socket timeout
+    connectTimeoutMS: 10000, // 10-second connection timeout
+  })
   .then(() => {
     console.log("Connected to database");
   })
   .catch((err) => {
     console.error("Database connection error:", err);
+    process.exit(1); // Exit if connection fails
   });
-
 // Routes
 app.use("/api/user", userRouter);
 app.use("/api/auth", authRouter);
@@ -41,7 +47,7 @@ app.use((err, req, res, next) => {
   });
 });
 
-const PORT = process.env.PORT || 3000;
+const PORT = process.env.PORT || 3001;
 app.listen(PORT, () => {
   console.log(`Server is running on port ${PORT}!!`);
 });

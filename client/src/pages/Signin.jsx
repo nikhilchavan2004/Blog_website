@@ -2,7 +2,12 @@ import { Button, Label, TextInput, Alert, Spinner } from "flowbite-react";
 import { useState } from "react";
 import { Link, useNavigate } from "react-router-dom";
 import { useDispatch, useSelector } from "react-redux";
-import { signinStart, signinSuccess, signinFailure } from "../redux/user/userSlice";
+import {
+  signinStart,
+  signinSuccess,
+  signinFailure,
+} from "../redux/user/userSlice";
+import Oauth from "../components/Oauth.jsx";
 
 export default function Signin() {
   const [formd, setForm] = useState({ email: "", password: "" });
@@ -62,7 +67,8 @@ export default function Signin() {
               </div>
             </Link>
             <p className="mt-6 text-lg text-gray-600 dark:text-gray-300">
-              Join our community of curious minds and passionate readers! Sign up now and become part of the conversation.
+              Join our community of curious minds and passionate readers! Sign
+              up now and become part of the conversation.
             </p>
           </div>
 
@@ -116,6 +122,7 @@ export default function Signin() {
                     "Sign In"
                   )}
                 </Button>
+                <Oauth />
               </form>
 
               <div className="mt-6 text-center text-sm text-gray-600 dark:text-gray-400">
