@@ -2,17 +2,19 @@ import { useState } from "react";
 import { Avatar, Dropdown, Navbar, TextInput } from "flowbite-react";
 import { Link, useLocation } from "react-router-dom";
 import { AiOutlineMenu, AiOutlineClose } from "react-icons/ai";
-import { FaMoon } from "react-icons/fa";
+import { FaMoon ,FaSun} from "react-icons/fa";
 import { CiSearch } from "react-icons/ci";
-import { useSelector } from "react-redux";
+import { useSelector, useDispatch } from "react-redux";;
+import { toggleTheme } from "../redux/theme/themeSlice";
 
 export default function Header() {
   const [isOpen, setIsOpen] = useState(false);
   const location = useLocation();
+  const dispatch = useDispatch();
   const path = location.pathname;
   const { curr } = useSelector((state) => state.user);
-
-  const toggleNavbar = () => {
+  const { theme } = useSelector((state) => state.theme);
+  const toggleNavbar = () => {a
     setIsOpen(!isOpen);
   };
 
@@ -71,39 +73,45 @@ export default function Header() {
       </button>
 
       <div className="flex gap-2 md:order-2">
-        <button className="w-12 h-10 hidden sm:inline bg-gradient-to-tr from-indigo-500 via-purple-500 to-pink-500 rounded-xl px-4 relative top-0.4">
-          <FaMoon />
+        <button 
+          className="w-12 h-10 hidden sm:inline bg-gradient-to-tr from-indigo-500 via-purple-500 to-pink-500 rounded-xl px-4 relative top-0.4" 
+          onClick={() =>dispatch(toggleTheme())} >
+
+            {
+              theme==='light'? <FaSun/>:<FaMoon/>
+            }
+         
         </button>
         
         {curr ? (
-  <Dropdown
-    arrowIcon={false}
-    inline
-    label={
-      <Avatar 
-        alt="user" 
-        img={curr.profilePicture || "default-profile-url"} 
-        rounded 
-      />
-    }
-  >
-    <Dropdown.Header>
-      <span className="block text-sm">{curr.username}</span>
-      <span className="block text-sm font-medium">{curr.email}</span>
-    </Dropdown.Header>
-    <Link to="/dashboard?tab=profile">
-      <Dropdown.Item>Dashboard</Dropdown.Item>
-    </Link>
-    <Dropdown.Divider />
-    <Dropdown.Item >Sign Out</Dropdown.Item>
-  </Dropdown>
-) : (
-  <Link to="/sign-in">
-    <button className="w-15 h-10 bg-gradient-to-tr from-indigo-500 via-purple-500 to-pink-500 rounded-2xl px-4">
-      Sign In
-    </button>
-  </Link>
-)}
+          <Dropdown
+            arrowIcon={false}
+            inline
+            label={
+              <Avatar 
+                alt="user" 
+                img={curr.profilePicture || "default-profile-url"} 
+                rounded 
+              />
+            }
+          >
+            <Dropdown.Header>
+              <span className="block text-sm">{curr.username}</span>
+              <span className="block text-sm font-medium">{curr.email}</span>
+            </Dropdown.Header>
+            <Link to="/dashboard?tab=profile">
+              <Dropdown.Item>Dashboard</Dropdown.Item>
+            </Link>
+            <Dropdown.Divider />
+            <Dropdown.Item>Sign Out</Dropdown.Item>
+          </Dropdown>
+        ) : (
+          <Link to="/signin">
+            <button className="w-15 h-10 bg-gradient-to-tr from-indigo-500 via-purple-500 to-pink-500 rounded-2xl px-4">
+              Sign In
+            </button>
+          </Link>
+        )}
       </div>
 
       <div className="hidden lg:flex space-x-10 relative top-1 left-16">
