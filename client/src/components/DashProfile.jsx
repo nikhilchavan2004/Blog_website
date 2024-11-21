@@ -1,60 +1,48 @@
 import { Button, TextInput } from "flowbite-react";
-import { useState, useRef, useEffect } from "react";
-import { useSelector } from "react-redux";
-import { 
-  getDownloadURL, 
-  getStorage, 
-  ref, 
-  uploadBytesResumable 
-} from 'firebase/storage';
-import { app } from '../firebase';
+import pp from "./pp.png";
+import { useSelector, useDispatch } from "react-redux";
+import { useEffect, useRef, useState } from "react";
+import { updateUserStart, updateUserSuccess, updateUserFailure } from "../redux/user/userSlice";
 
 export default function DashProfile() {
   const { currentUser } = useSelector((state) => state.user);
   const [imageFile, setImageFile] = useState(null);
-  const [imageFileUrl, setImageFileUrl] = useState(null);
-  const [imageFileUploadProgress, setImageFileUploadProgress] = useState(null);
-  const [imageFileUploadError, setImageFileUploadError] = useState(null);
-  const filePickerRef = useRef(null);
+  const [imagePreview, setImagePreview] = useState(null);
+  const [formData, setFormData] = useState({});
+  const filePickerRef = useRef();
+  const dispatch = useDispatch();
 
-  const handleImageChange = (e) => {
+  const handleChange = (e) => {
     const file = e.target.files[0];
     if (file) {
       setImageFile(file);
-      setImageFileUrl(URL.createObjectURL(file));
+      setImagePreview(URL.createObjectURL(file));
     }
   };
 
-  const uploadImage = () => {
-    // Reset previous upload states
-    setImageFileUploadError(null);
-    setImageFileUploadProgress(null);
+  const uploadImage = async () => {
+    try {
+      const formData = new FormData();
+      formData.append('image', imageFile);
 
-    const storage = getStorage(app);
-    const fileName = new Date().getTime() + imageFile.name;
-    const storageRef = ref(storage, fileName);
-    const uploadTask = uploadBytesResumable(storageRef, imageFile);
+      dispatch(updateUserStart());
 
-    uploadTask.on(
-      'state_changed',
-      (snapshot) => {
-        const progress = 
-          (snapshot.bytesTransferred / snapshot.totalBytes) * 100;
-        setImageFileUploadProgress(progress.toFixed(0));
-      },
-      (error) => {
-        setImageFileUploadError('Could not upload image (File must be less than 2MB)');
-        setImageFileUploadProgress(null);
-        setImageFile(null);
-        setImageFileUrl(null);
-      },
-      () => {
-        getDownloadURL(uploadTask.snapshot.ref).then((downloadURL) => {
-          setImageFileUrl(downloadURL);
-          // TODO: Update user profile in database with new image URL
-        });
+      const response = await fetch(`/api/user/update/${currentUser._id}`, {
+        method: 'PUT',
+        body: formData
+      });
+
+      const data = await response.json();
+
+      if (!response.ok) {
+        dispatch(updateUserFailure(data.message));
+        return;
       }
-    );
+
+      dispatch(updateUserSuccess(data));
+    } catch (error) {
+      dispatch(updateUserFailure(error.message));
+    }
   };
 
   useEffect(() => {
@@ -63,46 +51,66 @@ export default function DashProfile() {
     }
   }, [imageFile]);
 
+  const handleProfileUpdate = async (e) => {
+    e.preventDefault();
+    try {
+      dispatch(updateUserStart());
+
+      const response = await fetch(`/api/user/update/${currentUser._id}`, {
+        method: 'PUT',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify(formData)
+      });
+
+      const data = await response.json();
+
+      if (!response.ok) {
+        dispatch(updateUserFailure(data.message));
+        return;
+      }
+
+      dispatch(updateUserSuccess(data));
+    } catch (error) {
+      dispatch(updateUserFailure(error.message));
+    }
+  };
+
+  const handleFormChange = (e) => {
+    setFormData({ ...formData, [e.target.id]: e.target.value });
+  };
+
   return (
     <div className="max-w-lg mx-auto md:mx-96 p-3 w-full">
       <h1 className="text-center text-2xl font-semibold mb-6">Profile</h1>
-      <form>
+      <form onSubmit={handleProfileUpdate}>
         <div className="flex justify-center items-center mb-6 gap-3">
           <input 
             type="file" 
             accept="image/*" 
-            onChange={handleImageChange}
-            ref={filePickerRef}
+            onChange={handleChange} 
+            ref={filePickerRef} 
             hidden 
           />
           <div 
-            className="w-32 h-32 cursor-pointer shadow-md overflow-hidden rounded-full"
+            className="w-32 h-32 cursor-pointer shadow-md overflow-hidden rounded-full" 
             onClick={() => filePickerRef.current.click()}
           >
             <img
-              src={imageFileUrl || currentUser.profilePicture}
+              src={imagePreview || currentUser.profilePicture || pp}
               className="w-full h-full object-cover rounded-full border-4 border-[lightgrey]"
               alt="Profile"
             />
           </div>
         </div>
-        {imageFileUploadProgress && (
-          <div className="w-full bg-gray-200 rounded-full h-2.5 mb-4">
-            <div 
-              className="bg-blue-600 h-2.5 rounded-full" 
-              style={{width: `${imageFileUploadProgress}%`}}
-            ></div>
-          </div>
-        )}
-        {imageFileUploadError && (
-          <p className="text-red-500 text-center">{imageFileUploadError}</p>
-        )}
         <div className="flex flex-col gap-6">
           <TextInput 
             type="text" 
             id="username" 
             placeholder="username" 
             defaultValue={currentUser.username} 
+            onChange={handleFormChange} 
             className="text-black" 
           />
           <TextInput 
@@ -110,13 +118,13 @@ export default function DashProfile() {
             id="email" 
             placeholder="email" 
             defaultValue={currentUser.email}
+            onChange={handleFormChange}
           />
           <TextInput 
             type="password" 
             id="password" 
             placeholder="password" 
-            defaultValue="" 
-            placeholder="New Password (optional)"
+            onChange={handleFormChange}
           />
           <Button 
             type="submit" 
